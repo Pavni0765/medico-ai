@@ -1,0 +1,19 @@
+{
+  "name": "medstock-ai-workspace",
+  "version": "1.0.0",
+  "description": "MedStock AI — Smart Essential Medicine Availability & Shortage Coordination Platform",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview"
+  },
+  "keywords": [
+    "healthcare",
+    "medicine-shortage",
+    "pharmacy-coordination",
+    "ai-search",
+    "nlem"
+  ],
+  "author": "MedStock AI Hackathon Team",
+  "license": "MIT"
+}
