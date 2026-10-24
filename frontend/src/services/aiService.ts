@@ -13,7 +13,10 @@ const COMMON_VARIANTS: Record<string, string> = {
   augmentin: 'Amoxicillin + Clavulanic Acid',
   mox: 'Amoxicillin + Clavulanic Acid',
   ceftriaxone: 'Ceftriaxone',
+  ceftraxone: 'Ceftriaxone',
   ceftriaxn: 'Ceftriaxone',
+  ceftriazone: 'Ceftriaxone',
+  cefriaxone: 'Ceftriaxone',
   monocef: 'Ceftriaxone',
   azithro: 'Azithromycin',
   azithromycin: 'Azithromycin',
@@ -58,6 +61,32 @@ const DOSAGE_KEYWORDS = [
   { term: 'sachet', form: 'Oral Powder / Sachet' },
   { term: 'powder', form: 'Oral Powder / Sachet' },
 ];
+
+// Simple Levenshtein string similarity metric (0.0 to 1.0)
+function calculateSimilarity(s1: string, s2: string): number {
+  const longer = s1.length >= s2.length ? s1 : s2;
+  const shorter = s1.length < s2.length ? s1 : s2;
+  if (longer.length === 0) return 1.0;
+  
+  const costs: number[] = [];
+  for (let i = 0; i <= longer.length; i++) {
+    let lastValue = i;
+    for (let j = 0; j <= shorter.length; j++) {
+      if (i === 0) {
+        costs[j] = j;
+      } else if (j > 0) {
+        let newValue = costs[j - 1];
+        if (longer.charAt(i - 1) !== shorter.charAt(j - 1)) {
+          newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+        }
+        costs[j - 1] = lastValue;
+        lastValue = newValue;
+      }
+    }
+    if (i > 0) costs[shorter.length] = lastValue;
+  }
+  return (longer.length - costs[shorter.length]) / longer.length;
+}
 
 export const AIService = {
   // Feature 1: Intelligent Natural Language Medicine Search & Query Parser
@@ -145,6 +174,25 @@ export const AIService = {
           words.some((w) => w.length > 3 && (name.includes(w) || active.includes(w)))
         );
       });
+    }
+
+    // Fuzzy string similarity fallback for arbitrary clinical misspellings
+    if (!matchedMed) {
+      for (const m of medicines) {
+        const mainTokens = m.displayName.toLowerCase().split(/[\s+]+/);
+        for (const token of mainTokens) {
+          if (token.length >= 4) {
+            for (const w of words) {
+              if (w.length >= 4 && calculateSimilarity(w, token) >= 0.70) {
+                matchedMed = m;
+                break;
+              }
+            }
+          }
+          if (matchedMed) break;
+        }
+        if (matchedMed) break;
+      }
     }
 
     if (matchedMed) {
